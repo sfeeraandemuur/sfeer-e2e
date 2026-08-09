@@ -1,9 +1,10 @@
 // tests/checkout-ideal.spec.js
 //
 // Wat deze test doet:
-//   1. Opent de homepage van sfeeraandemuur.nl
+//   1. Opent altijd dezelfde vaste productpagina:
+//      https://sfeeraandemuur.nl/product/schotse-hooglander/
 //   2. Sluit eventuele cookiebanner
-//   3. Opent een productpagina en legt het product in de winkelmand
+//   3. Legt het product in de winkelmand
 //   4. Gaat naar de checkout
 //   5. Kiest iDEAL als betaalmethode
 //   6. Rondt het bestelproces af tot vlak vóór de bank-selectie
@@ -24,8 +25,10 @@ const { test, expect } = require('@playwright/test');
 
 test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page }) => {
 
-  // ---- STAP 1: Homepage openen ----
-  await page.goto('/');
+  // ---- STAP 1: Vaste productpagina openen ----
+  // We gaan altijd naar hetzelfde, vaste product, zodat de test niet meer
+  // afhankelijk is van welke producten er toevallig op de homepage staan.
+  await page.goto('/product/schotse-hooglander/');
 
   // ---- STAP 2: Cookiebanner wegklikken (indien aanwezig) ----
   // Nederlandse webshops gebruiken vaak Cookiebot/OneTrust met tekst als
@@ -36,14 +39,10 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     await cookieButton.click();
   }
 
-  // ---- STAP 3: Naar een productpagina en toevoegen aan winkelmand ----
-  // We klikken op het eerste product dat we op de pagina tegenkomen,
-  // zodat de test niet breekt als een specifiek product ooit verdwijnt.
-  // Pas dit gerust aan naar een vast product-URL als je liever altijd
-  // hetzelfde artikel test, bv: await page.goto('/product/paradijs/');
-  const eersteProduct = page.locator('a[href*="/product/"]').first();
-  await expect(eersteProduct).toBeVisible({ timeout: 15000 });
-  await eersteProduct.click();
+  // ---- STAP 3: Product toevoegen aan winkelmand ----
+  // We staan nu al op de productpagina van "Schotse Hooglander", dus we
+  // hoeven alleen nog een eventuele formaat/materiaal-keuze te doen en op
+  // "In winkelmand" te klikken.
 
   // Op de productpagina moet meestal nog een formaat/materiaal gekozen
   // worden voordat "In winkelmand" klikbaar is. Dit verschilt per product,
