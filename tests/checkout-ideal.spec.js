@@ -31,13 +31,13 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   await page.goto('/product/schotse-hooglander/');
 
   // ---- STAP 2: Cookiebanner wegklikken (indien aanwezig) ----
-  // Nederlandse webshops gebruiken vaak Cookiebot/OneTrust met tekst als
-  // "Alles accepteren" of "Accepteren". We proberen het, maar falen niet
-  // als de banner er niet is (bv. bij een herhaalde testrun).
-  const cookieButton = page.getByRole('button', { name: /accepteren/i });
-  if (await cookieButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await cookieButton.click();
-  }
+  // Deze site gebruikt een banner met als id "cc-consent-banner". De tekst
+  // bleek in de praktijk Engels te zijn ("We use cookies..."), dus we
+  // zoeken meertalig naar de accepteer-knop. Belangrijk: we wachten ook
+  // actief tot de banner ECHT verdwenen is, want zolang hij nog in de
+  // DOM zit (ook onzichtbaar tijdens de sluit-animatie) blokkeert hij
+  // klikken op elementen erachter.
+  await sluitCookieBanner(page);
 
   // ---- STAP 3: Product toevoegen aan winkelmand ----
   // We staan nu al op de productpagina van "Schotse Hooglander", dus we
@@ -152,6 +152,41 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   // We stoppen hier bewust -- er wordt geen bank-login gedaan en er wordt
   // dus geen echte betaling voltooid.
 });
+
+/**
+ * Sluit de cookiebanner van sfeeraandemuur.nl (id="cc-consent-banner").
+ * Zoekt meertalig naar een accepteer-knop, valt terug op de eerste knop
+ * in de banner als er geen herkenbare tekst gevonden wordt, en wacht
+ * daarna actief tot de banner echt (onzichtbaar) verdwenen is -- zolang
+ * hij nog aanwezig is blokkeert hij namelijk klikken op de rest van de
+ * pagina, ook als hij optisch al lijkt te zijn dichtgeklikt.
+ */
+async function sluitCookieBanner(page) {
+  const banner = page.locator('#cc-consent-banner');
+  const isZichtbaar = await banner.isVisible({ timeout: 5000 }).catch(() => false);
+  if (!isZichtbaar) return;
+
+  // Probeer eerst netjes op een echte accepteer-knop te klikken, ongeacht
+  // of het een <button>, <a> of ander klikbaar element is.
+  const acceptKnop = banner
+    .locator('button, a, [role="button"]')
+    .filter({ hasText: /accept|akkoord|accepteren|toestaan|allow|agree|got it|^ok$/i })
+    .first();
+
+  if (await acceptKnop.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await acceptKnop.click().catch(() => {});
+  }
+
+  // Nog steeds zichtbaar (geen passende knop gevonden, of de klik werkte
+  // niet)? Verwijder de banner dan hard uit de pagina zodat hij in elk
+  // geval geen klikken op de rest van de pagina meer blokkeert.
+  const isNogSteedsZichtbaar = await banner.isVisible({ timeout: 2000 }).catch(() => false);
+  if (isNogSteedsZichtbaar) {
+    await page.evaluate(() => {
+      document.getElementById('cc-consent-banner')?.remove();
+    });
+  }
+}
 
 /**
  * Helperfunctie: vult een formulierveld alleen in als het op de pagina
