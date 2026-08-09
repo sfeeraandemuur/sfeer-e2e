@@ -60,6 +60,12 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     .getByRole('button', { name: /toevoegen aan winkelwagen/i })
     .or(page.getByText(/toevoegen aan winkelwagen/i));
   await expect(inWinkelmandKnop.first()).toBeVisible({ timeout: 15000 });
+
+  // Extra vangnet: de cookiebanner verschijnt soms met een kleine vertraging
+  // (ná onze eerste controle in stap 2). Controleer daarom hier nogmaals,
+  // vlak vóór de klik, zodat hij niet alsnog in de weg zit.
+  await sluitCookieBanner(page);
+
   await inWinkelmandKnop.first().click();
 
   // ---- STAP 4: Naar de winkelmand / checkout ----
