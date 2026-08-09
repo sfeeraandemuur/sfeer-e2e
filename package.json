@@ -1,0 +1,16 @@
+{
+  "name": "sfeer-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end test: product in winkelmand + iDEAL checkout voor sfeeraandemuur.nl",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "codegen": "playwright codegen https://www.sfeeraandemuur.nl",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

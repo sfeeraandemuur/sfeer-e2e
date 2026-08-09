@@ -1,0 +1,56 @@
+name: Nachtelijke E2E-test sfeeraandemuur.nl
+
+# Wanneer draait dit?
+on:
+  # 1) Automatisch elke nacht, ook als jouw eigen computer uitstaat.
+  #    LET OP: GitHub Actions rekent in UTC, niet in Nederlandse tijd!
+  #    "0 1 * * *"  = elke dag om 01:00 UTC
+  #                 = 02:00 Nederlandse wintertijd (CET)
+  #                 = 03:00 Nederlandse zomertijd (CEST)
+  #    Pas het cron-schema hieronder aan als je een ander tijdstip wilt.
+  schedule:
+    - cron: '0 1 * * *'
+
+  # 2) Handmatig met één klik in de GitHub-website (handig om te testen
+  #    of alles werkt zonder een hele nacht te moeten wachten).
+  workflow_dispatch:
+
+jobs:
+  e2e-test:
+    name: Winkelmand + iDEAL checkout test
+    runs-on: ubuntu-latest        # gratis cloud-computer die GitHub aanbiedt
+    timeout-minutes: 15
+
+    steps:
+      # Stap 1: haal je projectcode op uit de repository
+      - name: Code ophalen
+        uses: actions/checkout@v4
+
+      # Stap 2: Node.js installeren op deze cloud-computer
+      - name: Node.js installeren
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Stap 3: Playwright + de browsers installeren (gratis, elke run opnieuw
+      # omdat de cloud-computer na afloop weer helemaal leeg wordt gemaakt)
+      - name: Dependencies installeren
+        run: npm ci
+
+      - name: Playwright-browsers installeren
+        run: npx playwright install --with-deps chromium
+
+      # Stap 4: de eigenlijke test draaien
+      - name: Test draaien
+        run: npx playwright test
+
+      # Stap 5: rapport (screenshots/video/tijdmeting) altijd bewaren,
+      # ook als de test faalt, zodat je 's ochtends kunt zien wat er
+      # gebeurde. Te vinden onder het tabblad "Actions" van je repository.
+      - name: Testrapport bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
