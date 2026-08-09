@@ -84,27 +84,57 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
 
   await expect(page).toHaveURL(/checkout/i, { timeout: 15000 });
 
-  // ---- STAP 5: (Eventueel) contact- en adresgegevens invullen ----
-  // Veel checkouts vereisen minimaal e-mail, naam, adres en postcode
-  // voordat de betaalopties zichtbaar worden. Vul hier testgegevens in.
-  // Pas de veldnamen aan op basis van wat codegen voor jouw site laat zien.
+  // ---- STAP 5: Factuurgegevens invullen ----
+  // De checkout van deze site is opgesplitst in stappen: eerst gegevens +
+  // adres invullen en op "Doorgaan" klikken, pas daarna worden de
+  // betaalmethoden (waaronder iDEAL) zichtbaar. Het adres werkt hier met
+  // Postcode + Huisnummer (Nr.) in plaats van één los straatveld.
   const testdata = {
-    email: 'playwright.test@example.com',
-    voornaam: 'Test',
-    achternaam: 'Gebruiker',
-    straat: 'Teststraat 1',
-    postcode: '1234 AB',
-    plaats: 'Amsterdam',
-    telefoon: '0612345678',
+    email: 'test@test.nl',
+    voornaam: 'Playwright',
+    achternaam: 'test',
+    postcode: '5051s',
+    huisnummer: '27',
+    // Fallback-waarden, alleen gebruikt als de site straat/plaats niet
+    // automatisch invult op basis van postcode + huisnummer.
+    straatFallback: 'Teststraat',
+    plaatsFallback: 'Tilburg',
   };
 
-  await vulVeldInAlsAanwezig(page, /e-?mail/i, testdata.email);
-  await vulVeldInAlsAanwezig(page, /voornaam/i, testdata.voornaam);
-  await vulVeldInAlsAanwezig(page, /achternaam/i, testdata.achternaam);
-  await vulVeldInAlsAanwezig(page, /straat|adres/i, testdata.straat);
+  await vulVeldInAlsAanwezig(page, /e-?mailadres/i, testdata.email);
+  await vulVeldInAlsAanwezig(page, /^voornaam/i, testdata.voornaam);
+  await vulVeldInAlsAanwezig(page, /^achternaam/i, testdata.achternaam);
   await vulVeldInAlsAanwezig(page, /postcode/i, testdata.postcode);
-  await vulVeldInAlsAanwezig(page, /plaats|stad/i, testdata.plaats);
-  await vulVeldInAlsAanwezig(page, /telefoon/i, testdata.telefoon);
+  await vulVeldInAlsAanwezig(page, /^nr\.?$/i, testdata.huisnummer);
+
+  // Veel Nederlandse checkouts vullen straat en plaats automatisch aan
+  // zodra postcode + huisnummer zijn ingevuld. Geef de site heel even de
+  // tijd om dat te doen voordat we zelf iets invullen.
+  await page.waitForTimeout(1500);
+
+  const straatVeld = page.getByLabel(/straatnaam/i).first();
+  if (await straatVeld.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const huidigeWaarde = await straatVeld.inputValue().catch(() => '');
+    if (!huidigeWaarde) {
+      await straatVeld.fill(testdata.straatFallback);
+    }
+  }
+
+  const plaatsVeld = page.getByLabel(/^plaats/i).first();
+  if (await plaatsVeld.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const huidigeWaarde = await plaatsVeld.inputValue().catch(() => '');
+    if (!huidigeWaarde) {
+      await plaatsVeld.fill(testdata.plaatsFallback);
+    }
+  }
+
+  // Door naar de volgende stap van de checkout (betaalmethoden).
+  const doorgaanKnop = page
+    .getByRole('button', { name: /doorgaan/i })
+    .or(page.getByText(/doorgaan/i));
+  if (await doorgaanKnop.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+    await doorgaanKnop.first().click();
+  }
 
   // ---- STAP 6: iDEAL kiezen als betaalmethode ----
   const idealOptie = page.getByText(/ideal/i).first();
