@@ -44,22 +44,23 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   // hoeven alleen nog een eventuele formaat/materiaal-keuze te doen en op
   // "In winkelmand" te klikken.
 
-  // Op de productpagina moet meestal nog een formaat/materiaal gekozen
-  // worden voordat "In winkelmand" klikbaar is. Dit verschilt per product,
-  // dus dit is het eerste stuk dat je met codegen exact wilt vastleggen.
-  // Onderstaande probeert een eventuele eerste keuze-optie te selecteren.
+  // Op deze site staan Type decoratie (Wanddeco), materiaal (Papier) en
+  // formaat (20x30) standaard al goed ingevuld, dus daar hoeft de test
+  // niets mee te doen. Mocht dat ooit veranderen, dan kan hieronder alsnog
+  // een keuze gemaakt worden via de listbox/dropdown-elementen.
   const optiePicker = page.locator('select, [role="listbox"] >> nth=0');
   if (await optiePicker.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-    // Voorbeeld voor een <select>-dropdown; pas aan indien nodig.
     const tagName = await optiePicker.first().evaluate(el => el.tagName.toLowerCase());
     if (tagName === 'select') {
       await optiePicker.first().selectOption({ index: 1 });
     }
   }
 
-  const inWinkelmandKnop = page.getByRole('button', { name: /in winkelmand|toevoegen/i });
-  await expect(inWinkelmandKnop).toBeVisible({ timeout: 15000 });
-  await inWinkelmandKnop.click();
+  const inWinkelmandKnop = page
+    .getByRole('button', { name: /toevoegen aan winkelwagen/i })
+    .or(page.getByText(/toevoegen aan winkelwagen/i));
+  await expect(inWinkelmandKnop.first()).toBeVisible({ timeout: 15000 });
+  await inWinkelmandKnop.first().click();
 
   // ---- STAP 4: Naar de winkelmand / checkout ----
   // Na het toevoegen verschijnt vaak een mini-cart of pop-up met een link
