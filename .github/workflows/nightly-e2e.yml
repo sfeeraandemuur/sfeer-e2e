@@ -35,7 +35,7 @@ jobs:
       # Stap 3: Playwright + de browsers installeren (gratis, elke run opnieuw
       # omdat de cloud-computer na afloop weer helemaal leeg wordt gemaakt)
       - name: Dependencies installeren
-        run: npm ci
+        run: npm install
 
       - name: Playwright-browsers installeren
         run: npx playwright install --with-deps chromium
