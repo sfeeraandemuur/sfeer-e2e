@@ -116,11 +116,16 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     plaatsFallback: 'Goirle',
   };
 
+  // Wacht tot het adresgedeelte van het formulier daadwerkelijk zichtbaar
+  // is voordat we beginnen met invullen -- voorkomt dat we te vroeg typen
+  // terwijl het formulier nog aan het laden is.
+  await page.getByLabel(/postcode/i).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+
   await vulVeldInAlsAanwezig(page, /e-?mailadres/i, testdata.email);
   await vulVeldInAlsAanwezig(page, /^voornaam/i, testdata.voornaam);
   await vulVeldInAlsAanwezig(page, /^achternaam/i, testdata.achternaam);
   await vulVeldInAlsAanwezig(page, /postcode/i, testdata.postcode);
-  await vulVeldInAlsAanwezig(page, /^nr\.?$/i, testdata.huisnummer);
+  await vulVeldInAlsAanwezig(page, /^nr\.?/i, testdata.huisnummer);
 
   // Veel Nederlandse checkouts vullen straat en plaats automatisch aan
   // zodra postcode + huisnummer zijn ingevuld. Geef de site heel even de
@@ -255,13 +260,13 @@ async function sluitCookieBanner(page) {
  */
 async function vulVeldInAlsAanwezig(page, labelRegex, waarde) {
   const veld = page.getByLabel(labelRegex).first();
-  if (await veld.isVisible({ timeout: 2000 }).catch(() => false)) {
+  if (await veld.isVisible({ timeout: 8000 }).catch(() => false)) {
     await veld.fill(waarde);
     return;
   }
   // Fallback op placeholder-tekst, want niet elk formulier gebruikt <label>.
   const veldViaPlaceholder = page.getByPlaceholder(labelRegex).first();
-  if (await veldViaPlaceholder.isVisible({ timeout: 2000 }).catch(() => false)) {
+  if (await veldViaPlaceholder.isVisible({ timeout: 3000 }).catch(() => false)) {
     await veldViaPlaceholder.fill(waarde);
   }
 }
