@@ -25,6 +25,15 @@ module.exports = defineConfig({
   use: {
     baseURL: 'https://www.sfeeraandemuur.nl',
 
+    // Geheime header waarmee Cloudflare dit testverkeer herkent en
+    // gericht doorlaat, zonder de bot-bescherming voor de rest van de
+    // site te verzwakken. De waarde komt uit een environment-variabele
+    // (lokaal via .env of handmatig gezet, in GitHub Actions via een
+    // Secret) en wordt dus nergens hardcoded in dit bestand.
+    extraHTTPHeaders: {
+      'x-e2e-test-secret': process.env.E2E_BYPASS_SECRET || '',
+    },
+
     // Neemt een video op van elke test die faalt -> heel handig om te zien wat er misging.
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',

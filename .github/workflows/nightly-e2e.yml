@@ -43,6 +43,8 @@ jobs:
       # Stap 4: de eigenlijke test draaien
       - name: Test draaien
         run: npx playwright test
+        env:
+          E2E_BYPASS_SECRET: ${{ secrets.E2E_BYPASS_SECRET }}
 
       # Stap 5: rapport (screenshots/video/tijdmeting) altijd bewaren,
       # ook als de test faalt, zodat je 's ochtends kunt zien wat er
