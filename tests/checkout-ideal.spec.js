@@ -108,12 +108,12 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     email: 'test@test.nl',
     voornaam: 'Playwright',
     achternaam: 'test',
-    postcode: '5051s',
+    postcode: '5051ZS',
     huisnummer: '27',
-    // Fallback-waarden, alleen gebruikt als de site straat/plaats niet
-    // automatisch invult op basis van postcode + huisnummer.
-    straatFallback: 'Teststraat',
-    plaatsFallback: 'Tilburg',
+    // Fallback-waarden, alleen gebruikt als de site straat/plaats onverhoopt
+    // niet automatisch invult op basis van postcode + huisnummer.
+    straatFallback: 'Hellenweg',
+    plaatsFallback: 'Goirle',
   };
 
   await vulVeldInAlsAanwezig(page, /e-?mailadres/i, testdata.email);
