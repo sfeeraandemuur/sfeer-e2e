@@ -148,12 +148,22 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     }
   }
 
-  // Door naar de volgende stap van de checkout (betaalmethoden).
-  const doorgaanKnop = page
-    .getByRole('button', { name: /doorgaan/i })
-    .or(page.getByText(/doorgaan/i));
-  if (await doorgaanKnop.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+  // De checkout van deze site bestaat uit meerdere interne tabbladen
+  // (adres -> verzending -> betaling). Er kan dus meer dan één keer een
+  // "Doorgaan"-knop verschijnen. We blijven daarom net zolang klikken tot
+  // de knop niet meer verschijnt (of tot een veiligheidsgrens van 3 keer),
+  // wat betekent dat we bij het echte betaalscherm zijn aangekomen.
+  for (let poging = 0; poging < 3; poging++) {
+    const doorgaanKnop = page
+      .getByRole('button', { name: /doorgaan/i })
+      .or(page.getByText(/doorgaan/i));
+
+    const isZichtbaar = await doorgaanKnop.first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isZichtbaar) break;
+
     await doorgaanKnop.first().click();
+    // Geef de site even de tijd om het volgende tabblad te tonen.
+    await page.waitForTimeout(1500);
   }
 
   // ---- STAP 6: iDEAL kiezen als betaalmethode ----
