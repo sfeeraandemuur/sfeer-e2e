@@ -143,15 +143,21 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   }
 
   // ---- STAP 6: iDEAL kiezen als betaalmethode ----
-  // Op deze site staat iDEAL standaard al geselecteerd (blauw bolletje).
-  // We proberen 'm voor de zekerheid nog aan te klikken, maar laten de
-  // test niet stuklopen als dat niet lukt (bv. door een widget die niet
-  // met gewone tekst-selectors te vinden is) -- zolang de uiteindelijke
-  // keuze iDEAL is, is het doel van deze stap gehaald.
-  const idealOptie = page.getByText(/ideal/i).first();
-  const idealZichtbaar = await idealOptie.isVisible({ timeout: 15000 }).catch(() => false);
+  // Op deze site staat iDEAL standaard al geselecteerd. We zoeken bewust
+  // specifiek naar de RADIOBUTTON (niet naar willekeurige "ideal"-tekst
+  // op de pagina) -- anders bestaat het risico dat we per ongeluk een
+  // betaal-logo verderop op de pagina raken, wat de checkout kan verlaten.
+  const idealRadio = page.getByRole('radio', { name: /ideal/i }).first();
+  const idealZichtbaar = await idealRadio.isVisible({ timeout: 15000 }).catch(() => false);
   if (idealZichtbaar) {
-    await idealOptie.click().catch(() => {});
+    const reedsGeselecteerd = await idealRadio.isChecked().catch(() => false);
+    if (!reedsGeselecteerd) {
+      await idealRadio.check();
+      // Als het aanklikken een betaalmethode-wissel triggert, herberekent
+      // WooCommerce de checkout via een achtergrond-verzoek. Geef de
+      // pagina even de tijd om dat af te ronden voordat we verdergaan.
+      await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    }
   }
 
   // ---- STAP 6b: Akkoord met de algemene voorwaarden ----
