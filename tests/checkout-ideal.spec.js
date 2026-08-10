@@ -69,10 +69,13 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   await inWinkelmandKnop.first().click();
 
   // Even geduld: het toevoegen aan de winkelmand gaat op deze site via een
-  // achtergrond-verzoek (AJAX). Geef de site de tijd om dat te verwerken
-  // voordat we doorklikken naar de winkelmand -- anders lopen we het risico
-  // dat de winkelmand nog leeg lijkt.
-  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+  // achtergrond-verzoek en duurt merkbaar even. We proberen eerst netjes te
+  // wachten tot het netwerk rustig is, met een royale timeout. Sommige
+  // sites hebben continu achtergrondverkeer (chatwidgets, trackers) waardoor
+  // "networkidle" nooit echt bereikt wordt -- daarom wachten we daarna
+  // sowieso nog een vaste, extra periode als extra zekerheid.
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(3000);
 
   // ---- STAP 4: Naar de winkelmand / checkout ----
   // Na het toevoegen verschijnt vaak een mini-cart of pop-up met een link
