@@ -44,17 +44,9 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   // hoeven alleen nog een eventuele formaat/materiaal-keuze te doen en op
   // "In winkelmand" te klikken.
 
-  // Op deze site staan Type decoratie (Wanddeco), materiaal (Papier) en
-  // formaat (20x30) standaard al goed ingevuld, dus daar hoeft de test
-  // niets mee te doen. Mocht dat ooit veranderen, dan kan hieronder alsnog
-  // een keuze gemaakt worden via de listbox/dropdown-elementen.
-  const optiePicker = page.locator('select, [role="listbox"] >> nth=0');
-  if (await optiePicker.first().isVisible({ timeout: 3000 }).catch(() => false)) {
-    const tagName = await optiePicker.first().evaluate(el => el.tagName.toLowerCase());
-    if (tagName === 'select') {
-      await optiePicker.first().selectOption({ index: 1 });
-    }
-  }
+  // De standaardkeuzes op de productpagina (Type decoratie, materiaal,
+  // formaat) staan al goed zodra je erop landt -- daar hoeft de test dus
+  // niets mee te doen. We raken deze velden bewust niet aan.
 
   const inWinkelmandKnop = page
     .getByRole('button', { name: /toevoegen aan winkelwagen/i })
