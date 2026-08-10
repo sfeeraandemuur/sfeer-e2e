@@ -25,6 +25,11 @@ module.exports = defineConfig({
   use: {
     baseURL: 'https://www.sfeeraandemuur.nl',
 
+    // Forceert Nederlandse taal in de browser. Zonder dit toont de site
+    // op cloud-servers (zoals GitHub Actions) soms Engelse tekst i.p.v.
+    // Nederlandse, wat al onze tekst-gebaseerde selectors kan laten missen.
+    locale: 'nl-NL',
+
     // Geheime header waarmee Cloudflare dit testverkeer herkent en
     // gericht doorlaat, zonder de bot-bescherming voor de rest van de
     // site te verzwakken. De waarde komt uit een environment-variabele
@@ -32,6 +37,7 @@ module.exports = defineConfig({
     // Secret) en wordt dus nergens hardcoded in dit bestand.
     extraHTTPHeaders: {
       'x-e2e-test-secret': process.env.E2E_BYPASS_SECRET || '',
+      'Accept-Language': 'nl-NL,nl;q=0.9',
     },
 
     // Neemt een video op van elke test die faalt -> heel handig om te zien wat er misging.
