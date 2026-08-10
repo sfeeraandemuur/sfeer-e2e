@@ -70,8 +70,12 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
 
   // ---- STAP 4: Naar de winkelmand / checkout ----
   // Na het toevoegen verschijnt vaak een mini-cart of pop-up met een link
-  // "Naar winkelmand" of "Afrekenen". We proberen beide.
-  const naarCheckout = page.getByRole('link', { name: /afrekenen|naar winkelmand|checkout/i }).first();
+  // "Naar winkelmand" of "Afrekenen". We proberen zowel links als knoppen,
+  // want deze site gebruikt niet overal hetzelfde element-type.
+  const naarCheckout = page
+    .getByRole('link', { name: /afrekenen|naar winkelmand|checkout/i })
+    .or(page.getByRole('button', { name: /afrekenen|naar winkelmand|checkout/i }))
+    .first();
   if (await naarCheckout.isVisible({ timeout: 5000 }).catch(() => false)) {
     await naarCheckout.click();
   } else {
@@ -83,8 +87,12 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   await expect(page).toHaveURL(/winkelmand|cart|checkout/i, { timeout: 15000 });
 
   // Als we op de winkelmandpagina staan i.p.v. checkout, klik door.
-  const afrekenenKnop = page.getByRole('link', { name: /afrekenen|checkout/i }).first();
-  if (await afrekenenKnop.isVisible({ timeout: 3000 }).catch(() => false)) {
+  const afrekenenKnop = page
+    .getByRole('link', { name: /afrekenen|checkout/i })
+    .or(page.getByRole('button', { name: /afrekenen|checkout/i }))
+    .or(page.getByText(/afrekenen/i))
+    .first();
+  if (await afrekenenKnop.isVisible({ timeout: 5000 }).catch(() => false)) {
     await afrekenenKnop.click();
   }
 
