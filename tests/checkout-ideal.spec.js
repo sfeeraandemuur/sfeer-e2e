@@ -161,7 +161,7 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     const isZichtbaar = await doorgaanKnop.first().isVisible({ timeout: 5000 }).catch(() => false);
     if (!isZichtbaar) break;
 
-    await doorgaanKnop.first().click();
+    await doorgaanKnop.first().dblclick();
     // Geef de site even de tijd om het volgende tabblad te tonen.
     await page.waitForTimeout(1500);
   }
