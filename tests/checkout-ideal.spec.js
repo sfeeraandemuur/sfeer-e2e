@@ -121,10 +121,21 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   // terwijl het formulier nog aan het laden is.
   await page.getByLabel(/postcode/i).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 
-  await vulVeldInAlsAanwezig(page, /e-?mailadres/i, testdata.email);
-  await vulVeldInAlsAanwezig(page, /^voornaam/i, testdata.voornaam);
-  await vulVeldInAlsAanwezig(page, /^achternaam/i, testdata.achternaam);
-  await vulVeldInAlsAanwezig(page, /postcode/i, testdata.postcode);
+  // Deze drie velden zijn standaard WooCommerce-velden met vaste ID's --
+  // we proberen die eerst, en vallen alleen terug op tekst zoeken als het
+  // ID onverhoopt niet bestaat.
+  if (!(await vulVeldViaId(page, 'billing_email', testdata.email))) {
+    await vulVeldInAlsAanwezig(page, /e-?mailadres/i, testdata.email);
+  }
+  if (!(await vulVeldViaId(page, 'billing_first_name', testdata.voornaam))) {
+    await vulVeldInAlsAanwezig(page, /^voornaam/i, testdata.voornaam);
+  }
+  if (!(await vulVeldViaId(page, 'billing_last_name', testdata.achternaam))) {
+    await vulVeldInAlsAanwezig(page, /^achternaam/i, testdata.achternaam);
+  }
+  if (!(await vulVeldViaId(page, 'billing_postcode', testdata.postcode))) {
+    await vulVeldInAlsAanwezig(page, /postcode/i, testdata.postcode);
+  }
   await vulVeldInAlsAanwezig(page, /^nr\.?/i, testdata.huisnummer);
 
   // Veel Nederlandse checkouts vullen straat en plaats automatisch aan
@@ -146,6 +157,10 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     if (!huidigeWaarde) {
       await plaatsVeld.fill(testdata.plaatsFallback);
     }
+    // Tab indrukken om het veld te "verlaten" -- sommige formulieren
+    // controleren pas bij het verlaten van een veld (blur) of alles
+    // geldig is, en Playwright's .fill() simuleert dat niet vanzelf.
+    await page.keyboard.press('Tab');
   }
 
   // De checkout van deze site bestaat uit meerdere interne tabbladen
@@ -161,7 +176,8 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
     const isZichtbaar = await doorgaanKnop.first().isVisible({ timeout: 5000 }).catch(() => false);
     if (!isZichtbaar) break;
 
-    await doorgaanKnop.first().dblclick();
+    await doorgaanKnop.first().scrollIntoViewIfNeeded().catch(() => {});
+    await doorgaanKnop.first().dblclick({ force: true }).catch(() => {});
     // Geef de site even de tijd om het volgende tabblad te tonen.
     await page.waitForTimeout(1500);
   }
@@ -261,6 +277,23 @@ async function sluitCookieBanner(page) {
       document.getElementById('cc-consent-banner')?.remove();
     });
   }
+}
+
+/**
+ * Vult een veld in via het standaard WooCommerce ID (bv. "billing_email"),
+ * wat veel betrouwbaarder is dan zoeken op zichtbare labeltekst -- die
+ * bleek op deze site meermaals net iets anders te zijn dan verwacht.
+ * Geeft true terug als het gelukt is, anders false (zodat er een fallback
+ * geprobeerd kan worden).
+ */
+async function vulVeldViaId(page, id, waarde) {
+  const veld = page.locator(`#${id}`);
+  if (await veld.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await veld.fill(waarde);
+    await veld.evaluate(el => el.blur()).catch(() => {});
+    return true;
+  }
+  return false;
 }
 
 /**
