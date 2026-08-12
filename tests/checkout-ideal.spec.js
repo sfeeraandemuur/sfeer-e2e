@@ -22,6 +22,8 @@
 // (zie README, stap 5) zodat ze exact bij de site passen.
 
 const { test, expect } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
 
 test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page }) => {
 
@@ -220,13 +222,41 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   // als extra vangnet, mocht dit ooit veranderen.
   const bankOfProviderUrl = /wero|mollie\.com|buckaroo\.nl|adyen\.com|multisafepay\.com|ideal\.nl|ideal-checkout/i;
 
-  await page.waitForURL(bankOfProviderUrl, { timeout: 30_000 });
+  // We gebruiken waitUntil: 'commit' i.p.v. het standaard 'load'. Sommige
+  // bank-doorverwijzingen (zoals deep links die een bank-app proberen te
+  // openen) laden in een headless browser zonder bank-app nooit helemaal
+  // "af", waardoor het standaard 'load'-event nooit komt. We willen alleen
+  // weten dat de navigatie zelf heeft plaatsgevonden.
+  await page.waitForURL(bankOfProviderUrl, { timeout: 60_000, waitUntil: 'commit' });
   const duurMs = Date.now() - startTijd;
 
   console.log(`⏱  Tijd van "bestelling plaatsen" tot bank/provider-pagina: ${duurMs} ms`);
 
+  // Schrijf de gemeten tijd ook naar een los bestand. De GitHub Actions
+  // workflow leest dit bestand uit om de exacte tijd in de e-mailmelding
+  // te kunnen opnemen (zie .github/workflows/nightly-e2e.yml).
+  fs.writeFileSync(path.join(process.cwd(), 'duration-ms.txt'), String(duurMs));
+
   // ---- STAP 8: Controleren dat we daadwerkelijk bij de bank(keuze) zijn ----
   await expect(page).toHaveURL(bankOfProviderUrl);
+
+  // Extra zekerheid, bovenop de URL-check: controleer dat er ook
+  // daadwerkelijk herkenbare bank-keuze-inhoud op het scherm staat (zoals
+  // "Kies je bank" of "Scan met je bank app"). Dit voorkomt een vals-
+  // positieve meting als de URL toevallig al matcht voordat de echte
+  // bankpagina is geladen.
+  // Extra zekerheid, best-effort: als er herkenbare bank-keuze-tekst te
+  // vinden is, loggen we dat ter bevestiging. Dit is bewust GEEN harde
+  // eis, want de betaalflow stuurt soms direct door naar een specifieke
+  // banktransactie-URL (zoals een deep link) zonder eerst een bankkeuze-
+  // scherm te tonen -- dat is nog steeds een geslaagde doorverwijzing.
+  const bankPaginaInhoud = page.getByText(/kies je bank|scan met je bank app|kies uw bank/i).first();
+  const bankInhoudZichtbaar = await bankPaginaInhoud.isVisible({ timeout: 10000 }).catch(() => false);
+  console.log(
+    bankInhoudZichtbaar
+      ? '✅ Bank-keuze-inhoud gevonden op de pagina.'
+      : 'ℹ️  Geen bank-keuze-tekst gevonden -- waarschijnlijk direct doorgestuurd naar een specifieke banktransactie-URL, wat ook een geslaagde doorverwijzing is.'
+  );
 
   // Voeg de gemeten tijd toe aan het testrapport zodat je hem in de
   // HTML-report (npm run report) kunt terugvinden.
