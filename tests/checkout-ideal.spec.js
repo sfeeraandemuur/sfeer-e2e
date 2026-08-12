@@ -251,7 +251,7 @@ test('product in winkelmand -> checkout -> iDEAL -> bank bereikt', async ({ page
   // banktransactie-URL (zoals een deep link) zonder eerst een bankkeuze-
   // scherm te tonen -- dat is nog steeds een geslaagde doorverwijzing.
   const bankPaginaInhoud = page.getByText(/kies je bank|scan met je bank app|kies uw bank/i).first();
-  const bankInhoudZichtbaar = await bankPaginaInhoud.isVisible({ timeout: 10000 }).catch(() => false);
+  const bankInhoudZichtbaar = await bankPaginaInhoud.isVisible({ timeout: 3000 }).catch(() => false);
   console.log(
     bankInhoudZichtbaar
       ? '✅ Bank-keuze-inhoud gevonden op de pagina.'

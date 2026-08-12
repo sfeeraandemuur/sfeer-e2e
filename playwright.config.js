@@ -14,8 +14,10 @@ module.exports = defineConfig({
   // (checkout-flows zijn soms wat traag/onvoorspelbaar).
   retries: 1,
 
-  // Hoe lang een hele test maximaal mag duren.
-  timeout: 60_000,
+  // Hoe lang een hele test maximaal mag duren. Ruim gezet omdat de site
+  // na "Plaats bestelling" een controlestap toont ("We controleren je
+  // bestelling / Dit kan even duren") die soms langer dan 30s duurt.
+  timeout: 120_000,
 
   reporter: [
     ['list'],               // nette output in de terminal
